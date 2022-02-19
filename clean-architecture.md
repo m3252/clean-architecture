@@ -60,19 +60,19 @@ JPA 는 도메인 영역에 (추상화된)리포지토리를 두어서 영속성
 ![jpa-dependency](jpa-dependency.png)
 [stackoverflow](https://stackoverflow.com/questions/67153991/application-with-interchangeable-persistance-layer)
 
-### 3.클린 아키텍처
+#### 클린 아키텍처
 > 클린 아키텍처란 도메인 코드 밖으로는 어떠한 의존성도 없어야 함을 의미힌다. 대신 의존성 역전 원칙의 도움으로 모든 의존성이 도메인을 향하고 있다.
 
-#### 클린 아키텍처의 추상화된 모습 (헥사고날 아키텍처)
+##### 클린 아키텍처의 추상화된 모습 (헥사고날 아키텍처)
 ![헥사고날](Hexagonal.png)
 [출처 : 넷플릭스](https://netflixtechblog.com/ready-for-changes-with-hexagonal-architecture-b315ec967749)
 
-#### 특징
+##### 특징
 + 도메인 영역에서는 어떤 영속성 프레임워크나 UI 프레임워크가 사용되는지 알 수 없다.
   - 특정 프레임워크에 종속되지 않는다.
   - 비즈니스 규칙에만 집중할 수 있다.
 
-#### 구조
+##### 구조
 육각형 안에는 도메인 엔티티와 이와 상호작용하는 유스케이스가 있다.
 육각형 바깥에는 애플리케이션과 상호작용하는 다양한 어댑터들이 있다.
 
@@ -82,3 +82,56 @@ JPA 는 도메인 영역에 (추상화된)리포지토리를 두어서 영속성
 ref.
 - 만들면서 배우는 클린 아키텍처
 - [우아한 테크세미나 - 조영호](https://www.youtube.com/watch?v=dJ5C4qRqAgA)
+
+## 3. 코드 구성하기
+
+### 아키텍처적으로 표현력 있는 패키지 구조
+
+```
+my-project
+└── account
+    ├── adapter
+    |   |── in
+    |   |   └── ui   
+    |   |       └── AccountController
+    |   |── out
+    |   |   └── persistence
+    |   |       |── AccountPersistenceAdapter        
+    |   |       └── SpringDataAccountRepository DIP 
+    ├── domain
+    |   |── Account        
+    |   └── Activity
+    |
+    └── application
+        └── SendMoneyService 
+        └── port : 어댑터의 기능을 실행하기 위해 포트 인터페이스를 호출
+            |── in 
+            |   └── SendMoneyUseCase : (DI) 포트 인터페이스를 구현한 실제 객체를
+            └── out
+                |── LoadAccountPort        
+                └── UpdateAccountStatePort
+```
+
+##### 장점 
++ 바깥과 통신하기 위해선 애플리케이션 내에 port 통해야 한다.
++ 애플리케이션 계층에서 어댑터 클래스로 향하는 우발적인 의존성이 존재할 수 없다.
++ 애플리케이션의 기능 조각이나 특성을 구분 짓는 패키 경계가 존재한다. 
++ 애플리케이션이 어떤 유스케이스들을 제공하는지 파악하기 쉽다.
+  + 어떤 기능이 ui 어댑터에서 호출되는지, 영속성 어댑터가 도메인 계층에 어떤 기능을 제공하는지 한눈에 알아보기 쉽다.
++ 가시성이 좋다.
++ 도메인 코드의 OCP, DIP 를 유지하기 쉽다.
++ 적극적인 사고를 촉진한다. (생각하는 프로그래밍?)
++ DDD 개념과 알맞다.
+
+#### 의존성 주입의 역할
+> 클린 아키텍처의 가장 본질적인 요건은 애플리케이션의 계층이 인커밍/아웃고잉 어댑터에 의존성을 갖지 않는 것이다.
+
+어댑터는 그저 애플리케이션 계층에 위치한 서비스를 호출할 뿐이다.
+
+```mermaid
+flowchart LR
+  A("AccountController ") ---> B("SendMoneyUseCase");
+  
+```
+
+
