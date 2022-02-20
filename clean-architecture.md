@@ -93,22 +93,22 @@ my-project
     ├── adapter
     |   |── in
     |   |   └── ui   
-    |   |       └── AccountController
+    |   |       └── AccountController : SendMoneyUseCase
     |   |── out
     |   |   └── persistence
     |   |       |── AccountPersistenceAdapter        
-    |   |       └── SpringDataAccountRepository DIP 
+    |   |       └── SpringDataAccountRepository  
     ├── domain
     |   |── Account        
     |   └── Activity
     |
     └── application
-        └── SendMoneyService 
+        └── SendMoneyService : LoadAccountPort
         └── port : 어댑터의 기능을 실행하기 위해 포트 인터페이스를 호출
             |── in 
-            |   └── SendMoneyUseCase : (DI) 포트 인터페이스를 구현한 실제 객체를
+            |   └── SendMoneyUseCase : (DI) 포트 인터페이스를 구현한 실제 SendMoneyService 객체를 주입  
             └── out
-                |── LoadAccountPort        
+                |── LoadAccountPort : (DI) AccountPersistenceAdapter 인터페이스 주입        
                 └── UpdateAccountStatePort
 ```
 
@@ -126,12 +126,45 @@ my-project
 #### 의존성 주입의 역할
 > 클린 아키텍처의 가장 본질적인 요건은 애플리케이션의 계층이 인커밍/아웃고잉 어댑터에 의존성을 갖지 않는 것이다.
 
-어댑터는 그저 애플리케이션 계층에 위치한 서비스를 호출할 뿐이다.
+1. 어댑터는 그저 애플리케이션 계층에 위치한 서비스를 호출할 뿐이다.
+2. 애플리케이션 계층으로의 진입점을 구분 짓기 위해 실제 서비스를 포트 인터페이스들 사이에 숨겨둔다.
+3. 모드 계층에 의존성을 둔 중립 컴포넌트를 둔다. : SendMoneyService
 
-```mermaid
-flowchart LR
-  A("AccountController ") ---> B("SendMoneyUseCase");
+ ```JAVA
+class AccountController {
+    private final SendMoneyUseCase sendMoneyUseCase;
+}
+
+interface SendMoneyUseCase {
+    boolean sendMoney(SendMoneyCommand command);
+}
+
+class SendMoneyService implements SendMoneyUseCase {
+    private LoadAccountPort loadAccountPort;
+
+    @java.lang.Override
+    public boolean sendMoney(SendMoneyCommand command) {
+        return false;
+    }
+}
+
+// AccountController 가 SendMoneyUseCase 를 필요로 하기 때문에 의존성 주입을 통해 SendMoneyService 를 주입한다.
+
+class LoadAccountPort {
+    Account loadAccount(AccountId accountId, LocalDateTime baselineDate);
+}
+
+class AccountPersistenceAdapter implements LoadAccountPort {
+    @java.lang.Override
+    Account loadAccount(AccountId accountId, LocalDateTime baselineDate) {
+        return super.loadAccount(accountId, baselineDate);
+    }
+}
+
+// SendMoneyService 인스턴스를 만들 때도 LoadAccountPort 인터페이스로 가장한 AccountPersistenceAdapter 를 주입한다.
+ ```
+
+
+
   
-```
-
 
