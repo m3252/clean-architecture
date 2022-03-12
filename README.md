@@ -182,3 +182,139 @@ class AccountPersistenceAdapter implements LoadAccountPort {
 4. 출력을 반환한다.
 
 비즈니스 규칙을 충족한 유스케이스는 입력을 기반으로 모델의 상태를 변경한다.
+
+## 5. 웹 어댑터 구현하기
+
+---
+
+### 웹 어댑터의 책임
+1. HTTP 요청을 객체로 매핑
+2. 권한 검사
+3. 입력 유효성 검증
+4. <Strong>입력을 유스케이스의 입력 모델로 매핑</Strong>
+5. 유스케이스 호출
+6. 유스케이스의 출력을 HTTP로 매핑
+7. HTTP 응답을 반환
+
+### 컨트롤러 나누기
+
+
+```JAVA
+
+@RestController
+@RequiredArgsConstructor
+public class AccountController {
+    private final GetAccountBalanceQuery getAccountBalanceQuery;
+    private final ListAccountsQuery listAccountsQuery;
+    private final LoadAccountQuery loadAccountQuery;
+    
+    private final SendMoneyUseCase sendMoneyUseCase;
+    private final CreateAccountUseCase createAccountUseCase;
+    
+    @GetMapping
+    public List<AccountResource> accounts() {
+        ...
+    }
+    
+    @GetMapping("/accounts/{accountId}")
+    public AccountResource account(@PathVariable("accountId") Long accountId) {
+        ...
+    }
+    
+    @GetMapping("/accounts/{accountId}/balance")
+    public long accountBalance(@PathVariable("accountId") Long accountId) {
+        ...
+    }
+
+    @PostMapping("/accounts")
+    public AccountResource createAccount(@RequestBody AccountResource accountResource) {
+        ...
+    }
+    
+}
+```
+
+### 문제와 해결
+
+1. 시간이 지나면서 컨트롤러와 테스트 코드를 파악하기가 힘들어진다.
+2. 모든 연산을 단일 컨트롤러에 넣는 것은 데이터 구조(AccountResource)의 재활용을 촉진한다.
+3. 컨트롤러와 서비스 객체 이름이 명확하지 않다.
+    - CreateAccount > RegisterAccount
+4. 동시작업이 어렵다.
+5. 많은 의존성이 존재한다.
+    - 많은 의존성은 객체의 책임을 증가 시킨다.
+
+```JAVA
+@RestController
+@RequiredArgsConstructor
+public class SendMoneyController {
+
+    private final SendMoneyUseCase sendMoneyUseCase;
+
+    @PostMapping("/accounts/send/{sourceAccountId}/{targetAccountId}/{amount}")
+    public void sendMoney(
+            @PathVariable("sourceAccountId") Long sourceAccountId,
+            @PathVariable("targetAccountId") Long targetAccountId,
+            @PathVariable("amount") Long amount
+    ) {
+        // 웹 어댑터의 입력 모델을 유스케이스의 입력 모델로 변환할 수 있다
+        SendMoneyCommand command = new SendMoneyCommand(
+                new AccountId(sourceAccountId),
+                new AccountId(targetAccountId),
+                Money.of(amount));
+        
+        sendMoneyUseCase.sendMoney(command);
+    }
+}
+```
+
+작은 컨트롤러는 처음에는 조금 더 공수가 들겠지만 유지보수하는 동안에는 더 파악하기 쉽고, 테스하기 쉬우며, 동시 작업을 지원할 것이다.
+
+## 6. 영속성 어댑터 구현하기
+
+---
+
+> 헥사고날 아키텍처에서 영속성 어댑터는 '주도되는' 혹은 '아웃고잉' 어댑터다.
+
+포트는 애플리케이션 서비스와 영속성 코드 사이에서 간접적인 계층을 제공한다. 영속성 문제에 신경 쓰지 않고 도메인 코드를 개발하기 위해 간접 계층을 추가하고 있다.
+
+### 영속성 어댑터의 책임
+
+1. 입력을 받는다.
+2. 입력을 데이터베이스 포맷으로 매핑한다.
+3. 입력을 데이터베이스로 보낸다.
+4. 데이터베이스 출력을 애플리케이션 포맷으로 매핑한다.
+5. 출력을 반환한다.
+
+핵심은 영속성 어댑터의 입력 모델이 애플리케이션 코어에 위치함으로 영속성 어댑터 내부를 변경하는 것이 코어에 영향을 미치지 않는다.
+
+### 포트 인터페이스 나누기
+
+#### ISP (Interface Segregation Principle)
+
+> '필요없는 화물을 운반하는 무언가에 의존하고 있으면 예상하지 못했던 문제가 생길 수 있다.'
+
+이 원칙은 클라이언트가 오로지 자신이 필요로 하는 메서드만 알면 되도록 넓은 인터페이스를 특화된 인터페이스로 분리해야 한다고 설명한다.
+
+```JAVA
+
+class SendMoneyService {
+    private final LoadAccountPort loadAccountPort;
+    private final UpdateAccountPort updateAccountPort;
+    
+    SendMoneyService(LoadAccountPort loadAccountPort, UpdateAccountPort updateAccountPort) {
+        this.loadAccountPort = loadAccountPort;
+        this.updateAccountPort = updateAccountPort;
+    }
+}
+
+class RegisterAccountService {
+    private final CreateAccountPort createAccountPort;
+
+    RegisterableService(CreateAccountPort createAccountPort){
+        this.CreateAccountPort = createAccountPort;
+    }
+}
+
+
+```
