@@ -9,12 +9,11 @@ import java.util.List;
 @Component
 class AccountMapper {
 
-    Account mapToDomainEntity(
-            AccountEntity account,
-            List<ActivityEntity> activities,
-            Long withdrawalBalance,
-            Long depositBalance) {
-
+    Account mapToDomainEntity(AccountEntity account,
+                              List<ActivityEntity> activities,
+                              Long withdrawalBalance,
+                              Long depositBalance
+    ) {
         Money baselineBalance = Money.subtract(
                 Money.of(depositBalance),
                 Money.of(withdrawalBalance));

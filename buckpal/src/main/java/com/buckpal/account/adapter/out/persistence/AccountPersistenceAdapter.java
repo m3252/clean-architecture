@@ -21,38 +21,33 @@ public class AccountPersistenceAdapter implements
     private final AccountMapper accountMapper;
 
     @Override
-    public Account loadAccount(
-            AccountId accountId,
-            LocalDateTime baselineDate) {
+    public Account loadAccount(AccountId accountId,
+                               LocalDateTime baselineDate) {
 
-        AccountEntity account =
-                accountRepository.findById(accountId.getValue())
-                        .orElseThrow(EntityNotFoundException::new);
+        AccountEntity account = accountRepository.findById(accountId.getValue())
+                .orElseThrow(EntityNotFoundException::new);
 
-        List<ActivityEntity> activities =
-                activityRepository.findByOwnerSince(
-                        accountId.getValue(),
-                        baselineDate);
+        List<ActivityEntity> activities = activityRepository.findByOwnerSince(
+                accountId.getValue(),
+                baselineDate);
 
-        Long withdrawalBalance = orZero(activityRepository
-                .getWithdrawalBalanceUntil(
-                        accountId.getValue(),
-                        baselineDate));
+        Long withdrawalBalance = orZero(activityRepository.getWithdrawalBalanceUntil(
+                accountId.getValue(),
+                baselineDate));
 
-        Long depositBalance = orZero(activityRepository
-                .getDepositBalanceUntil(
-                        accountId.getValue(),
-                        baselineDate));
+        Long depositBalance = orZero(activityRepository.getDepositBalanceUntil(
+                accountId.getValue(),
+                baselineDate));
 
         return accountMapper.mapToDomainEntity(
                 account,
                 activities,
                 withdrawalBalance,
-                depositBalance);
-
+                depositBalance
+        );
     }
 
-    private Long orZero(Long value){
+    private Long orZero(Long value) {
         return value == null ? 0L : value;
     }
 
