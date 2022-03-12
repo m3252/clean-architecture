@@ -1,4 +1,4 @@
-package com.buckpal.domain;
+package com.buckpal.account.domain;
 
 import lombok.Getter;
 import lombok.NonNull;

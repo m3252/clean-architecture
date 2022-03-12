@@ -1,4 +1,4 @@
-package com.buckpal.domain;
+package com.buckpal.account.domain;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -20,6 +20,7 @@ public class Account {
     }
 
     public boolean withdraw(Money money, AccountId targetAccountId) {
+        // 잔고에 출금할 금액이 남아있나요?
         if (!mayWithdraw(money)) {
             return false;
         }

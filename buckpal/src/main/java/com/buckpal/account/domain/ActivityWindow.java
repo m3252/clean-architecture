@@ -1,4 +1,4 @@
-package com.buckpal.domain;
+package com.buckpal.account.domain;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -40,6 +40,7 @@ public class ActivityWindow {
 
     /**
      * Calculates the balance by summing up the values of all activities within this window.
+     * 모든 활동의 값을 합산하여 잔액을 계산합니다.
      */
     public Money calculateBalance(AccountId accountId) {
         Money depositBalance = activities.stream()

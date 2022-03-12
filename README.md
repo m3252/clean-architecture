@@ -7,6 +7,8 @@
 
 ## 1. 계층형 아키텍처의 문제
 
+---
+
 #### 계층형 아키텍처란?
 
 흔히 사용하는 mvc 패턴의 전형적인 구조이다.
@@ -31,6 +33,8 @@ flowchart LR
 6. 동시작업이 어렵다.
 
 ## 2. 의존성 역전하기
+
+---
 
 ### 단일 책임 원칙 (Single responsibility principle)
 > 단일책임원칙 (SRP)의 일반적인 해석은 다음과 같다. `하나의 컴포넌트는 오로지 한 가지 일만 해야 하고, 그것을 올바르게 수행해야 한다.`  
@@ -84,6 +88,8 @@ ref.
 - [우아한 테크세미나 - 조영호](https://www.youtube.com/watch?v=dJ5C4qRqAgA)
 
 ## 3. 코드 구성하기
+
+---
 
 ### 아키텍처적으로 표현력 있는 패키지 구조
 
@@ -164,7 +170,15 @@ class AccountPersistenceAdapter implements LoadAccountPort {
 // SendMoneyService 인스턴스를 만들 때도 LoadAccountPort 인터페이스로 가장한 AccountPersistenceAdapter 를 주입한다.
  ```
 
+## 4. 유스케이스 구현
 
+---
 
-  
+### 유스케이스 둘러보기
 
+1. in coming adapter 로부터 입력을 받는다.
+2. <Strong>비즈니스 규칙을 검증한다.</Strong>
+3. 모델 상태를 조작한다.
+4. 출력을 반환한다.
+
+비즈니스 규칙을 충족한 유스케이스는 입력을 기반으로 모델의 상태를 변경한다.
