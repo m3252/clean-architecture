@@ -165,6 +165,92 @@ class AccountPersistenceAdapter implements LoadAccountPort {
  ```
 
 
+## 5. 웹 어댑터 구현하기
 
-  
+---
+
+### 웹 어댑터의 책임
+1. HTTP 요청을 객체로 매핑
+2. 권한 검사
+3. 입력 유효성 검증
+4. <Strong>입력을 유스케이스의 입력 모델로 매핑</Strong>
+5. 유스케이스 호출
+6. 유스케이스의 출력을 HTTP로 매핑
+7. HTTP 응답을 반환
+
+### 컨트롤러 나누기
+
+
+```JAVA
+
+@RestController
+@RequiredArgsConstructor
+public class AccountController {
+    private final GetAccountBalanceQuery getAccountBalanceQuery;
+    private final ListAccountsQuery listAccountsQuery;
+    private final LoadAccountQuery loadAccountQuery;
+    
+    private final SendMoneyUseCase sendMoneyUseCase;
+    private final CreateAccountUseCase createAccountUseCase;
+    
+    @GetMapping
+    public List<AccountResource> accounts() {
+        ...
+    }
+    
+    @GetMapping("/accounts/{accountId}")
+    public AccountResource account(@PathVariable("accountId") Long accountId) {
+        ...
+    }
+    
+    @GetMapping("/accounts/{accountId}/balance")
+    public long accountBalance(@PathVariable("accountId") Long accountId) {
+        ...
+    }
+
+    @PostMapping("/accounts")
+    public AccountResource createAccount(@RequestBody AccountResource accountResource) {
+        ...
+    }
+    
+}
+```
+
+### 문제와 해결
+
+1. 시간이 지나면서 컨트롤러와 테스트 코드를 파악하기가 힘들어진다.
+2. 모든 연산을 단일 컨트롤러에 넣는 것은 데이터 구조(AccountResource)의 재활용을 촉진한다.
+3. 컨트롤러와 서비스 객체 이름이 명확하지 않다.
+   - CreateAccount > RegisterAccount
+4. 동시작업이 어렵다.
+5. 많은 의존성이 존재한다.
+   - 많은 의존성은 객체의 책임을 증가 시킨다.
+
+```JAVA
+@RestController
+@RequiredArgsConstructor
+public class SendMoneyController {
+
+    private final SendMoneyUseCase sendMoneyUseCase;
+
+    @PostMapping("/accounts/send/{sourceAccountId}/{targetAccountId}/{amount}")
+    public void sendMoney(
+            @PathVariable("sourceAccountId") Long sourceAccountId,
+            @PathVariable("targetAccountId") Long targetAccountId,
+            @PathVariable("amount") Long amount
+    ) {
+        // 웹 어댑터의 입력 모델을 유스케이스의 입력 모델로 변환할 수 있다
+        SendMoneyCommand command = new SendMoneyCommand(
+                new AccountId(sourceAccountId),
+                new AccountId(targetAccountId),
+                Money.of(amount));
+        
+        sendMoneyUseCase.sendMoney(command);
+    }
+}
+```
+
+작은 컨트롤러는 처음에는 조금 더 공수가 들겠지만 유지보수하는 동안에는 더 파악하기 쉽고, 테스하기 쉬우며, 동시 작업을 지원할 것이다.
+
+
 
